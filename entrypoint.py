@@ -68,7 +68,7 @@ def run_pip(input_string):
     res = set()
     pip_options = [
         "pip3", "download",
-        input_string,
+        input_string.replace("=","=="),
         "-d", TMP_DIR
     ]
 
