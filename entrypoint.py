@@ -48,6 +48,21 @@ def get_response(input_string, resolution_status, resolution_result):
         res['error'] = resolution_result
     return res
 
+def get_response_for_api(resolution_status, resolution_result):
+    res = {}
+    if resolution_status:
+        list1 = []
+        for package, version in resolution_result:
+            if package:
+                list1.append( {
+                    "product": package,
+                    "version": version
+                })
+        res = list1
+    else:
+        res['error'] = resolution_result
+    return res
+
 def parse_file(path):
     w = None
     package = None
@@ -109,30 +124,42 @@ app.config["DEBUG"] = True
 def home():
     return '''<h1>PyPI Resolver</h1>
     <p>An API for resolving PyPI dependencies.</p>
-    <p>API endpoint: /api/v1/packages<p>
-    <p>Supported query parameters: input (mandatory)
+    <p>API Endpoint: /dependencies/{packageName}/{version}<p>
+    <p><b>Note</b>: The {version} path parameter is optional <p>
     '''
 
 
 @app.errorhandler(404)
 def page_not_found(e):
-    return "<h1>404</h1><p>The resource could not be found.</p>", 404
+    return '''<h1>404</h1><p>The resource could not be found.</p>
+    <p>API Endpoint: /dependencies/{packageName}/{version}<p>''', 404
 
-@app.route('/api/v1/packages', methods=['GET'])
-def resolver_api():
-    query_parameters = request.args
+@app.route('/dependencies/<packageName>', methods=['GET'])
+def resolver_api_without_version(packageName):
+    
+    if not packageName:
+        return make_response(
+            jsonify({"Error": "You should provide a mandatory {packageName}"}),
+            400)
+    
+    status, res = run_pip(packageName)
 
-    input_string = query_parameters.get('input')
+    return jsonify(get_response_for_api(status, res))
 
-    if not input_string:
+@app.route('/dependencies/<packageName>/<version>', methods=['GET'])
+def resolver_api_with_version(packageName, version):
+    
+    if not packageName:
         return make_response(
             jsonify({"error": "You should provide `input` query parameters"}),
             400)
+    
+    status, res = run_pip(packageName+"="+version)
 
-    status, res = run_pip(input_string)
+    return jsonify(get_response_for_api(status, res))
 
-    return jsonify(get_response(input_string, status, res))
-
+def deploy(host='0.0.0.0', port=5000):
+    app.run(threaded=True, host=host, port=port)
 
 ###### CLI ######
 
@@ -183,8 +210,8 @@ def main():
         raise parser.error(message)
 
     if flask:
-        app.run()
-
+        deploy()
+        return
     status, res = run_pip(input_string)
     if output_file:
         with open(output_file, 'w') as outfile:

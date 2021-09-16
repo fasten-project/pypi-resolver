@@ -24,7 +24,7 @@
 FROM debian:stable
 
 # INSTALL apt-venv, python3, pip3
-RUN apt -yqq update && apt -yqq upgrade && apt install -yqq apt-venv python3 python3-pip
+RUN apt -yqq update && apt -yqq upgrade && apt install -yqq python3 python3-pip
 
 RUN mkdir -p /tmp
 RUN mkdir -p /api
@@ -35,4 +35,4 @@ COPY ./requirements.txt /api/requirements.txt
 RUN pip3 install -r /api/requirements.txt
 
 WORKDIR /api
-ENTRYPOINT ["python3", "entrypoint.py"]
+ENTRYPOINT ["python3", "entrypoint.py", "-f"]
