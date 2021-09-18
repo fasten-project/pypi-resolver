@@ -23,11 +23,6 @@ optional arguments:
   -f, --flask           Deploy flask api
 ```
 
-Flask API
----------
-* **Endpoint**: `/api/v1/packages`
-* **Supported query parameters**: input (required)
-
 Output Format
 -------------
 
@@ -70,4 +65,50 @@ Otherwise, it produces a JSON with an error message.
     "error": "ERROR: Could not find a version that satisfies the requirement
     bbq (from versions: none)"
 }
+```
+
+
+## Micro-service
+
+Deploy a micro-service that exposes a REST API for resolving Python dependencies.
+
+```bash
+docker build -f Dockerfile -t pypi-resolver .
+docker run -p 5001:5000 pypi-resolver
+```
+
+* Request format
+
+```
+url: http://localhost:5001/dependencies/{packageName}/{version}
+```
+<b>Note:</b> The {version} path parameter is optional
+
+* Example request using curl:
+
+```bash
+curl "http://localhost:5001/dependencies/django/3.1.3"
+```
+
+* Output format:
+ 
+ ```json
+[
+  {
+    "product": "Django",
+    "version": "3.1.3"
+  },
+  {
+    "product": "sqlparse",
+    "version": "0.4.2"
+  },
+  {
+    "product": "asgiref",
+    "version": "3.4.1"
+  },
+  {
+    "product": "pytz",
+    "version": "2021.1"
+  }
+]
 ```
