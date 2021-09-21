@@ -73,8 +73,8 @@ Otherwise, it produces a JSON with an error message.
 Deploy a micro-service that exposes a REST API for resolving Python dependencies.
 
 ```bash
-docker build -f Dockerfile -t pypi-resolver .
-docker run -p 5001:5000 pypi-resolver
+docker build -f Dockerfile -t pypi-resolver-api .
+docker run -p 5001:5000 pypi-resolver-api
 ```
 
 * Request format
