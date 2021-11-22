@@ -3,7 +3,7 @@ name: Publish Docker image
 on:
   push:
     branches:
-      - master
+      - main
 env:
   IMAGE_NAME: fasten.pypiresolver
 
