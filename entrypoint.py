@@ -212,10 +212,10 @@ def get_parser():
     )
     parser.add_argument(
         '-i',
-        '--input',
+        '--input_package',
         type=str,
         help=(
-            "Input should be a string of a package name or the names of "
+            "Input package should be a string of a package name or the names of "
             "multiple packages separated by spaces. Examples: "
             "'django' or 'django=3.1.3' or 'django wagtail'"
         )
@@ -248,15 +248,18 @@ def main():
     parser = get_parser()
     args = parser.parse_args()
 
-    input_string = args.input
+    input_string = args.input_package
     output_file = args.output_file
     cli_args = (input_string, output_file)
     flask = args.flask
-    requirements_path = args.local_project
+    requirements_path = args.requirements_file
 
     # Handle options
     if (flask and any(x for x in cli_args)):
         message = "You cannot use any other argument with --flask option."
+        raise parser.error(message)
+    if (input_string and requirements_path):
+        message = "You should always use only one of  --input_package or --local-project when you want to run the cli."
         raise parser.error(message)
     if (not flask and not input_string and not requirements_path):
         message = "You should always use --input or --local-project option when you want to run the cli."
@@ -265,16 +268,17 @@ def main():
     if flask:
         deploy()
         return
-    
+
+    if input_string:
+        status, res = run_pip_download(input_string) 
+
     if requirements_path:
         if not os.path.isfile(requirements_path):
             message = "Could not find the requirements file specified on: " + requirements_path
             raise parser.error(message)
         status, res = run_pip_compile(requirements_path)
+        input_string=requirements_path
 
-    if input_string:
-        
-        status, res = run_pip_download(input_string)
 
     if output_file:
         with open(output_file, 'w') as outfile:

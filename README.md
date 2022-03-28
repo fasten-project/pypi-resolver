@@ -11,12 +11,12 @@ Command Line Arguments
 __You should always use at least one of -f, -i or -r__
 
 ```
-usage: Resolve dependencies of PyPI packages [-h] [-i INPUT] [-r REQUIREMENTS_FILE] [-o OUTPUT_FILE] [-f]
+usage: Resolve dependencies of PyPI packages [-h] [-i INPUT_PACKAGE] [-r REQUIREMENTS_FILE] [-o OUTPUT_FILE] [-f]
 
 optional arguments:
   -h, --help            show this help message and exit
-  -i INPUT, --input INPUT
-                        Input should be a string of a package name or the names of multiple
+  -i INPUT_PACKAGE, --input_package INPUT_PACKAGE
+                        Input package be a string of a package name or the names of multiple
                         packages separated by spaces. Examples: 'django' or
                         'django=3.1.3' or 'django wagtail'
   -l LOCAL_PROJECT, --local-project LOCAL_PROJECT
