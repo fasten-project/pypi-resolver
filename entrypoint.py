@@ -35,6 +35,15 @@ TMP_DIR = "/tmp"
 
 ##### RESOLVER ######
 
+def create_requirements_file(requirements):
+    with open('temp.txt', 'w') as f:
+        for item in requirements:
+            f.write("%s\n" % item)
+
+def delete_requirements_file():
+    if os.path.exists("temp.txt"):
+        os.remove("temp.txt")
+
 def get_response(input_string, resolution_status, resolution_result):
     res = {"input": input_string, "status": resolution_status}
     if resolution_status:
@@ -155,8 +164,10 @@ app.config["DEBUG"] = True
 def home():
     return '''<h1>PyPI Resolver</h1>
     <p>An API for resolving PyPI dependencies.</p>
-    <p>API Endpoint: /dependencies/{packageName}/{version}<p>
+    <p>API Endpoint for PyPI Packages: /dependencies/{packageName}/{version}<p>
     <p><b>Note</b>: The {version} path parameter is optional <p>
+    <p>API Endpoint for Local Projects: /resolve_local_dependencies<p>
+    <p><b>Note</b>: Should recieve through a POST Request a list of all the project's dependencies as defined on the requirements.txt file, separated by commas <p>
     '''
 
 
@@ -189,17 +200,20 @@ def resolver_api_with_version(packageName, version):
 
     return jsonify(get_response_for_api(status, res))
 
-
-# @app.route('/resolve_local_dependencies', methods=['POST'])
-@app.route('/dependencies', methods=['POST'])
-def resolver_api_of_local_project(packageName):
+@app.route('/resolve_local_dependencies', methods=['POST'])
+def local_resolver():
+    try:
+        request_data=str(request.data.decode("utf-8")).replace("[","").replace("]","")
+        requirements = request_data.split(",")
+        create_requirements_file(requirements)
+        
+    except Exception as e:
+        return str(e)
+    status, res = run_pip_compile("temp.txt")
     
-    print(request)
-    
-    status, res = run_pip_download(packageName)
+    delete_requirements_file()
 
     return jsonify(get_response_for_api(status, res))
-
 
 def deploy(host='0.0.0.0', port=5000):
     app.run(threaded=True, host=host, port=port)
