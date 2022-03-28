@@ -1,16 +1,17 @@
 pypi-resolver
 ===============
 
-This tool resolves Python dependencies by using `pip`.
+This tool resolves Python dependencies by using `pip` and `pip-compile`.
 It can be executed as a CLI tool, or it can be deployed as a Flask API.
 It accepts as input any string that can be resolved by pip.
+It also supports dependency resolution of local python projects, by parsing the requirements.txt file.
 
 Command Line Arguments
 ----------------------
-__You should always use at least one of -f or -i__
+__You should always use at least one of -f, -i or -r__
 
 ```
-usage: Resolve dependencies of PyPI packages [-h] [-i INPUT] [-o OUTPUT_FILE] [-f]
+usage: Resolve dependencies of PyPI packages [-h] [-i INPUT] [-r REQUIREMENTS_FILE] [-o OUTPUT_FILE] [-f]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -18,6 +19,9 @@ optional arguments:
                         Input should be a string of a package name or the names of multiple
                         packages separated by spaces. Examples: 'django' or
                         'django=3.1.3' or 'django wagtail'
+  -l LOCAL_PROJECT, --local-project LOCAL_PROJECT
+                        The path of the requirements.txt file. When specified, the
+                        dependencies of a local project are resolved
   -o OUTPUT_FILE, --output-file OUTPUT_FILE
                         File to save the output
   -f, --flask           Deploy flask api

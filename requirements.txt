@@ -1,2 +1,3 @@
 flask
 pkginfo
+pip-tools

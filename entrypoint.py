@@ -24,7 +24,6 @@ import json
 import argparse
 import subprocess as sp
 import flask
-import sys
 import re
 import os
 from pkginfo import Wheel, SDist, BDist
@@ -222,20 +221,20 @@ def get_parser():
         )
     )
     parser.add_argument(
+        '-r',
+        '--requirements-file',
+        type=str,
+        help=(
+            "The path of the requirements.txt file. "
+            "When specified, the dependencies of a local project are resolved"
+        )
+    )   
+    parser.add_argument(
         '-o',
         '--output-file',
         type=str,
         help="File to save the output"
     )
-    parser.add_argument(
-        '-l',
-        '--local-project',
-        type=str,
-        help=(
-            "The path of the requirements.txt file. "
-            "When given, the dependencies of a local project are resolved"
-        )
-    )   
     parser.add_argument(
         '-f',
         '--flask',
