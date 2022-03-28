@@ -126,6 +126,7 @@ def run_pip_compile(filepath):
     res = set()
     pip_options = [
         "pip-compile", filepath,
+        "-n"
     ]
     cmd = sp.Popen(pip_options, stdout=sp.PIPE, stderr=sp.STDOUT)
     stdout, _ = cmd.communicate()
@@ -138,7 +139,7 @@ def run_pip_compile(filepath):
         if line.startswith("Could not find"):
             err = line
             break
-        if (re.match("^[a-zA-Z]+.*", line)):
+        if (re.match("^[a-zA-Z]+.*", line) and (not line.startswith("Dry-run"))):
             package, version = line.split("==")
             res.add((package, version))
     
