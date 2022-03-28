@@ -24,6 +24,8 @@ import json
 import argparse
 import subprocess as sp
 import flask
+import sys
+import re
 import os
 from pkginfo import Wheel, SDist, BDist
 from flask import request, jsonify, make_response
@@ -79,7 +81,7 @@ def parse_file(path):
 
     return package, version
 
-def run_pip(input_string):
+def run_pip_download(input_string):
     res = set()
     pip_options = [
         "pip3", "download",
@@ -116,6 +118,35 @@ def run_pip(input_string):
 
     return True, res
 
+def stripComments(code):
+    code = str(code)
+    return re.sub(r'(?m)^ *#.*\n?', '', code)
+
+def run_pip_compile(filepath):
+    res = set()
+    pip_options = [
+        "pip-compile", filepath,
+    ]
+    cmd = sp.Popen(pip_options, stdout=sp.PIPE, stderr=sp.STDOUT)
+    stdout, _ = cmd.communicate()
+
+    stdout = stdout.decode("utf-8").splitlines()
+
+    err = None
+    for line in stdout:
+        line = stripComments(line)
+        if line.startswith("Could not find"):
+            err = line
+            break
+        if (re.match("^[a-zA-Z]+.*", line)):
+            package, version = line.split("==")
+            res.add((package, version))
+    
+    if err:
+        return False, err
+    
+    return True, res
+
 ###### FLASK API ######
 app = flask.Flask("api")
 app.config["DEBUG"] = True
@@ -142,7 +173,7 @@ def resolver_api_without_version(packageName):
             jsonify({"Error": "You should provide a mandatory {packageName}"}),
             400)
     
-    status, res = run_pip(packageName)
+    status, res = run_pip_download(packageName)
 
     return jsonify(get_response_for_api(status, res))
 
@@ -154,9 +185,21 @@ def resolver_api_with_version(packageName, version):
             jsonify({"error": "You should provide `input` query parameters"}),
             400)
     
-    status, res = run_pip(packageName+"="+version)
+    status, res = run_pip_download(packageName+"="+version)
 
     return jsonify(get_response_for_api(status, res))
+
+
+# @app.route('/resolve_local_dependencies', methods=['POST'])
+@app.route('/dependencies', methods=['POST'])
+def resolver_api_of_local_project(packageName):
+    
+    print(request)
+    
+    status, res = run_pip_download(packageName)
+
+    return jsonify(get_response_for_api(status, res))
+
 
 def deploy(host='0.0.0.0', port=5000):
     app.run(threaded=True, host=host, port=port)
@@ -184,6 +227,15 @@ def get_parser():
         help="File to save the output"
     )
     parser.add_argument(
+        '-l',
+        '--local-project',
+        type=str,
+        help=(
+            "The path of the requirements.txt file. "
+            "When given, the dependencies of a local project are resolved"
+        )
+    )   
+    parser.add_argument(
         '-f',
         '--flask',
         action='store_true',
@@ -200,19 +252,30 @@ def main():
     output_file = args.output_file
     cli_args = (input_string, output_file)
     flask = args.flask
+    requirements_path = args.local_project
 
     # Handle options
     if (flask and any(x for x in cli_args)):
         message = "You cannot use any other argument with --flask option."
         raise parser.error(message)
-    if (not flask and not input_string):
-        message = "You should always use --input option when you want to run the cli."
+    if (not flask and not input_string and not requirements_path):
+        message = "You should always use --input or --local-project option when you want to run the cli."
         raise parser.error(message)
 
     if flask:
         deploy()
         return
-    status, res = run_pip(input_string)
+    
+    if requirements_path:
+        if not os.path.isfile(requirements_path):
+            message = "Could not find the requirements file specified on: " + requirements_path
+            raise parser.error(message)
+        status, res = run_pip_compile(requirements_path)
+
+    if input_string:
+        
+        status, res = run_pip_download(input_string)
+
     if output_file:
         with open(output_file, 'w') as outfile:
             json.dump(get_response(input_string, status, res), outfile)
