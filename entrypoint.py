@@ -282,9 +282,9 @@ def main():
 
     if output_file:
         with open(output_file, 'w') as outfile:
-            json.dump(get_response(input_string, status, res), outfile)
+            json.dump(get_response(input_string, status, res), outfile, indent=4)
     else:
-        print(json.dumps(get_response(input_string, status, res)))
+        print(json.dumps(get_response(input_string, status, res), indent=4))
 
 
 if __name__ == "__main__":
