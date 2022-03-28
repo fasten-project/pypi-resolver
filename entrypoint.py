@@ -212,7 +212,7 @@ def get_parser():
     )
     parser.add_argument(
         '-i',
-        '--input_package',
+        '--input-package',
         type=str,
         help=(
             "Input package should be a string of a package name or the names of "
@@ -259,7 +259,7 @@ def main():
         message = "You cannot use any other argument with --flask option."
         raise parser.error(message)
     if (input_string and requirements_path):
-        message = "You should always use only one of  --input_package or --local-project when you want to run the cli."
+        message = "You should always use only one of  --input-package or --local-project when you want to run the cli."
         raise parser.error(message)
     if (not flask and not input_string and not requirements_path):
         message = "You should always use --input or --local-project option when you want to run the cli."

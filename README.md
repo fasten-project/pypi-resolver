@@ -15,7 +15,7 @@ usage: Resolve dependencies of PyPI packages [-h] [-i INPUT_PACKAGE] [-r REQUIRE
 
 optional arguments:
   -h, --help            show this help message and exit
-  -i INPUT_PACKAGE, --input_package INPUT_PACKAGE
+  -i INPUT_PACKAGE, --input-package INPUT_PACKAGE
                         Input package be a string of a package name or the names of multiple
                         packages separated by spaces. Examples: 'django' or
                         'django=3.1.3' or 'django wagtail'
