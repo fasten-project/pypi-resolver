@@ -31,18 +31,19 @@ from flask import request, jsonify, make_response
 
 
 TMP_DIR = "/tmp"
+TMP_REQUIREMENTS_TXT= "temp.txt"
 
 
 ##### RESOLVER ######
 
 def create_requirements_file(requirements):
-    with open('temp.txt', 'w') as f:
+    with open(TMP_REQUIREMENTS_TXT, 'w') as f:
         for item in requirements:
             f.write("%s\n" % item)
 
 def delete_requirements_file():
-    if os.path.exists("temp.txt"):
-        os.remove("temp.txt")
+    if os.path.exists(TMP_REQUIREMENTS_TXT):
+        os.remove(TMP_REQUIREMENTS_TXT)
 
 def get_response(input_string, resolution_status, resolution_result):
     res = {"input": input_string, "status": resolution_status}
@@ -89,13 +90,20 @@ def parse_file(path):
 
     return package, version
 
-def run_pip_download(input_string):
+def run_pip(input_string, is_local_resolution):
     res = set()
-    pip_options = [
-        "pip3", "download",
-        input_string.replace("=","=="),
-        "-d", TMP_DIR
-    ]
+    if is_local_resolution:
+        pip_options = [
+            "pip3", "download",
+            "-r", input_string,
+             "-d", TMP_DIR
+        ]
+    else:
+        pip_options = [
+            "pip3", "download",
+            input_string.replace("=","=="),
+            "-d", TMP_DIR
+        ]
 
     cmd = sp.Popen(pip_options, stdout=sp.PIPE, stderr=sp.STDOUT)
     stdout, _ = cmd.communicate()
@@ -126,31 +134,37 @@ def run_pip_download(input_string):
 
     return True, res
 
-def stripComments(code):
-    code = str(code)
-    return re.sub(r'(?m)^ *#.*\n?', '', code)
-
-def run_pip_compile(filepath):
+def run_pip_download2(filepath):
     res = set()
     pip_options = [
-        "pip-compile", filepath,
-        "-n"
+        "pip3", "download",
+        "-r", filepath
     ]
+
     cmd = sp.Popen(pip_options, stdout=sp.PIPE, stderr=sp.STDOUT)
     stdout, _ = cmd.communicate()
 
     stdout = stdout.decode("utf-8").splitlines()
-
     err = None
+    package = None
     for line in stdout:
-        line = stripComments(line)
-        if line.startswith("Could not find"):
+        print (line)
+        if line.startswith("ERROR"):
             err = line
             break
-        if (re.match("^[a-zA-Z]+.*", line) and (not line.startswith("Dry-run"))):
-            package, version = line.split("==")
-            res.add((package, version))
-    
+
+        fname = None
+        if "Downloading" in line:
+            fname = os.path.join(TMP_DIR, os.path.basename(line.split()[1]))
+        elif "File was already downloaded" in line:
+            fname = line.split()[4]
+        if fname:
+            try:
+                res.add(parse_file(fname))
+            except Exception as e:
+                err = str(e)
+                break
+
     if err:
         return False, err
     
@@ -196,7 +210,7 @@ def resolver_api_with_version(packageName, version):
             jsonify({"error": "You should provide `input` query parameters"}),
             400)
     
-    status, res = run_pip_download(packageName+"="+version)
+    status, res = run_pip(packageName+"="+version, False)
 
     return jsonify(get_response_for_api(status, res))
 
@@ -209,7 +223,7 @@ def local_resolver():
         
     except Exception as e:
         return str(e)
-    status, res = run_pip_compile("temp.txt")
+    status, res = run_pip(TMP_REQUIREMENTS_TXT, True)
     
     delete_requirements_file()
 
@@ -284,13 +298,12 @@ def main():
         return
 
     if input_string:
-        status, res = run_pip_download(input_string) 
-
-    if requirements_path:
+        status, res = run_pip(input_string, False) 
+    else:
         if not os.path.isfile(requirements_path):
             message = "Could not find the requirements file specified on: " + requirements_path
             raise parser.error(message)
-        status, res = run_pip_compile(requirements_path)
+        status, res = run_pip(requirements_path, True)
         input_string=requirements_path
 
 
