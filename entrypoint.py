@@ -24,7 +24,6 @@ import json
 import argparse
 import subprocess as sp
 import flask
-import re
 import os
 from pkginfo import Wheel, SDist, BDist
 from flask import request, jsonify, make_response
@@ -134,41 +133,6 @@ def run_pip(input_string, is_local_resolution):
 
     return True, res
 
-def run_pip_download2(filepath):
-    res = set()
-    pip_options = [
-        "pip3", "download",
-        "-r", filepath
-    ]
-
-    cmd = sp.Popen(pip_options, stdout=sp.PIPE, stderr=sp.STDOUT)
-    stdout, _ = cmd.communicate()
-
-    stdout = stdout.decode("utf-8").splitlines()
-    err = None
-    package = None
-    for line in stdout:
-        print (line)
-        if line.startswith("ERROR"):
-            err = line
-            break
-
-        fname = None
-        if "Downloading" in line:
-            fname = os.path.join(TMP_DIR, os.path.basename(line.split()[1]))
-        elif "File was already downloaded" in line:
-            fname = line.split()[4]
-        if fname:
-            try:
-                res.add(parse_file(fname))
-            except Exception as e:
-                err = str(e)
-                break
-
-    if err:
-        return False, err
-    
-    return True, res
 
 ###### FLASK API ######
 app = flask.Flask("api")
@@ -198,7 +162,7 @@ def resolver_api_without_version(packageName):
             jsonify({"Error": "You should provide a mandatory {packageName}"}),
             400)
     
-    status, res = run_pip_download(packageName)
+    status, res = run_pip(packageName, False)
 
     return jsonify(get_response_for_api(status, res))
 
