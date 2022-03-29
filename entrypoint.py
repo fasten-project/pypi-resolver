@@ -186,6 +186,7 @@ def local_resolver():
         create_requirements_file(requirements)
         
     except Exception as e:
+        delete_requirements_file()
         return str(e)
     status, res = run_pip(TMP_REQUIREMENTS_TXT, True)
     

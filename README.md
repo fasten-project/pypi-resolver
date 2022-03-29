@@ -1,4 +1,4 @@
-pypi-resolver
+Fasten PyPI Resolver
 ===============
 
 This tool resolves Python dependencies by using `pip`.
