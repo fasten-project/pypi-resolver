@@ -1,23 +1,28 @@
-pypi-resolver
+Fasten PyPI Resolver
 ===============
 
 This tool resolves Python dependencies by using `pip`.
 It can be executed as a CLI tool, or it can be deployed as a Flask API.
 It accepts as input any string that can be resolved by pip.
+It also supports dependency resolution of local python projects, by parsing the requirements.txt file.
 
 Command Line Arguments
 ----------------------
-__You should always use at least one of -f or -i__
+__You should always use at least one of -f, -i or -r__
 
 ```
-usage: Resolve dependencies of PyPI packages [-h] [-i INPUT] [-o OUTPUT_FILE] [-f]
+usage: Resolve dependencies of PyPI packages [-h] [-i INPUT_PACKAGE] [-r REQUIREMENTS_FILE] [-o OUTPUT_FILE] [-f]
 
 optional arguments:
   -h, --help            show this help message and exit
-  -i INPUT, --input INPUT
-                        Input should be a string of a package name or the names of multiple
+  -i INPUT_PACKAGE, --input-package INPUT_PACKAGE
+                        Input package be a string of a package name or the names of multiple
                         packages separated by spaces. Examples: 'django' or
                         'django=3.1.3' or 'django wagtail'
+  -r REQUIREMENTS_FILE, --requirements-file REQUIREMENTS_FILE
+                        The path of the requirements.txt file.
+                        When specified, the dependencies of a local project are
+                        resolved
   -o OUTPUT_FILE, --output-file OUTPUT_FILE
                         File to save the output
   -f, --flask           Deploy flask api
@@ -77,6 +82,8 @@ docker build -f Dockerfile -t pypi-resolver-api .
 docker run -p 5001:5000 pypi-resolver-api
 ```
 
+### Dependency Resolution Endpoint for PyPI Packages
+
 * Request format
 
 ```
@@ -109,6 +116,87 @@ curl "http://localhost:5001/dependencies/django/3.1.3"
   {
     "product": "pytz",
     "version": "2021.1"
+  }
+]
+```
+### Dependency Resolution Endpoint for multiple dependencies.
+
+
+* Request format
+
+```
+url: http://localhost:5001/resolve_dependencies
+```
+
+* Usage
+
+  Should recieve through a POST Request a list of dependencies as defined on the requirements.txt file, separated by commas 
+
+* Example request using curl:
+
+```bash
+ curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d '[flask, pip-tools]' "http://localhost:5001/resolve_dependencies"
+```
+
+* Output format:
+ 
+ ```json
+[
+  {
+    "product": "tomli", 
+    "version": "2.0.1"
+  }, 
+  {
+    "product": "pip", 
+    "version": "22.0.4"
+  }, 
+  {
+    "product": "zipp", 
+    "version": "3.7.0"
+  }, 
+  {
+    "product": "Jinja2", 
+    "version": "3.1.1"
+  }, 
+  {
+    "product": "setuptools", 
+    "version": "61.2.0"
+  }, 
+  {
+    "product": "Werkzeug", 
+    "version": "2.1.0"
+  }, 
+  {
+    "product": "Flask", 
+    "version": "2.1.0"
+  }, 
+  {
+    "product": "importlib-metadata", 
+    "version": "4.11.3"
+  }, 
+  {
+    "product": "pep517", 
+    "version": "0.12.0"
+  }, 
+  {
+    "product": "itsdangerous", 
+    "version": "2.1.2"
+  }, 
+  {
+    "product": "click", 
+    "version": "8.1.0"
+  }, 
+  {
+    "product": "MarkupSafe", 
+    "version": "2.1.1"
+  }, 
+  {
+    "product": "pip-tools", 
+    "version": "6.5.1"
+  }, 
+  {
+    "product": "wheel", 
+    "version": "0.37.1"
   }
 ]
 ```

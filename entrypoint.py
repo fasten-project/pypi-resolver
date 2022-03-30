@@ -30,9 +30,19 @@ from flask import request, jsonify, make_response
 
 
 TMP_DIR = "/tmp"
+TMP_REQUIREMENTS_TXT= "temp.txt"
 
 
 ##### RESOLVER ######
+
+def create_requirements_file(requirements):
+    with open(TMP_REQUIREMENTS_TXT, 'w') as f:
+        for item in requirements:
+            f.write("%s\n" % item)
+
+def delete_requirements_file():
+    if os.path.exists(TMP_REQUIREMENTS_TXT):
+        os.remove(TMP_REQUIREMENTS_TXT)
 
 def get_response(input_string, resolution_status, resolution_result):
     res = {"input": input_string, "status": resolution_status}
@@ -79,13 +89,20 @@ def parse_file(path):
 
     return package, version
 
-def run_pip(input_string):
+def run_pip(input_string, is_local_resolution):
     res = set()
-    pip_options = [
-        "pip3", "download",
-        input_string.replace("=","=="),
-        "-d", TMP_DIR
-    ]
+    if is_local_resolution:
+        pip_options = [
+            "pip3", "download",
+            "-r", input_string,
+             "-d", TMP_DIR
+        ]
+    else:
+        pip_options = [
+            "pip3", "download",
+            input_string.replace("=","=="),
+            "-d", TMP_DIR
+        ]
 
     cmd = sp.Popen(pip_options, stdout=sp.PIPE, stderr=sp.STDOUT)
     stdout, _ = cmd.communicate()
@@ -124,8 +141,10 @@ app.config["DEBUG"] = True
 def home():
     return '''<h1>PyPI Resolver</h1>
     <p>An API for resolving PyPI dependencies.</p>
-    <p>API Endpoint: /dependencies/{packageName}/{version}<p>
+    <p>API Endpoint for PyPI Packages: /dependencies/{packageName}/{version}<p>
     <p><b>Note</b>: The {version} path parameter is optional <p>
+    <p>API Endpoint for Local Projects: /resolve_dependencies<p>
+    <p><b>Note</b>: Should recieve through a POST Request a list of multiple dependencies as defined on the requirements.txt file, separated by commas <p>
     '''
 
 
@@ -142,7 +161,7 @@ def resolver_api_without_version(packageName):
             jsonify({"Error": "You should provide a mandatory {packageName}"}),
             400)
     
-    status, res = run_pip(packageName)
+    status, res = run_pip(packageName, False)
 
     return jsonify(get_response_for_api(status, res))
 
@@ -154,7 +173,23 @@ def resolver_api_with_version(packageName, version):
             jsonify({"error": "You should provide `input` query parameters"}),
             400)
     
-    status, res = run_pip(packageName+"="+version)
+    status, res = run_pip(packageName+"="+version, False)
+
+    return jsonify(get_response_for_api(status, res))
+
+@app.route('/resolve_dependencies', methods=['POST'])
+def multiple_dependencies_resolver_api():
+    try:
+        request_data=str(request.data.decode("utf-8")).replace("[","").replace("]","")
+        requirements = request_data.split(",")
+        create_requirements_file(requirements)
+        
+    except Exception as e:
+        delete_requirements_file()
+        return str(e)
+    status, res = run_pip(TMP_REQUIREMENTS_TXT, True)
+    
+    delete_requirements_file()
 
     return jsonify(get_response_for_api(status, res))
 
@@ -169,14 +204,23 @@ def get_parser():
     )
     parser.add_argument(
         '-i',
-        '--input',
+        '--input-package',
         type=str,
         help=(
-            "Input should be a string of a package name or the names of "
+            "Input package should be a string of a package name or the names of "
             "multiple packages separated by spaces. Examples: "
             "'django' or 'django=3.1.3' or 'django wagtail'"
         )
     )
+    parser.add_argument(
+        '-r',
+        '--requirements-file',
+        type=str,
+        help=(
+            "The path of the requirements.txt file. "
+            "When specified, the dependencies of a local project are resolved"
+        )
+    )   
     parser.add_argument(
         '-o',
         '--output-file',
@@ -196,28 +240,42 @@ def main():
     parser = get_parser()
     args = parser.parse_args()
 
-    input_string = args.input
+    input_string = args.input_package
     output_file = args.output_file
     cli_args = (input_string, output_file)
     flask = args.flask
+    requirements_path = args.requirements_file
 
     # Handle options
     if (flask and any(x for x in cli_args)):
         message = "You cannot use any other argument with --flask option."
         raise parser.error(message)
-    if (not flask and not input_string):
-        message = "You should always use --input option when you want to run the cli."
+    if (input_string and requirements_path):
+        message = "You should always use only one of  --input-package or --local-project when you want to run the cli."
+        raise parser.error(message)
+    if (not flask and not input_string and not requirements_path):
+        message = "You should always use --input or --local-project option when you want to run the cli."
         raise parser.error(message)
 
     if flask:
         deploy()
         return
-    status, res = run_pip(input_string)
+
+    if input_string:
+        status, res = run_pip(input_string, False) 
+    else:
+        if not os.path.isfile(requirements_path):
+            message = "Could not find the requirements file specified on: " + requirements_path
+            raise parser.error(message)
+        status, res = run_pip(requirements_path, True)
+        input_string=requirements_path
+
+
     if output_file:
         with open(output_file, 'w') as outfile:
-            json.dump(get_response(input_string, status, res), outfile)
+            json.dump(get_response(input_string, status, res), outfile, indent=4)
     else:
-        print(json.dumps(get_response(input_string, status, res)))
+        print(json.dumps(get_response(input_string, status, res), indent=4))
 
 
 if __name__ == "__main__":
