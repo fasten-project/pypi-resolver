@@ -82,6 +82,8 @@ docker build -f Dockerfile -t pypi-resolver-api .
 docker run -p 5001:5000 pypi-resolver-api
 ```
 
+### Dependency Resolution Endpoint for PyPI Packages
+
 * Request format
 
 ```
@@ -114,6 +116,87 @@ curl "http://localhost:5001/dependencies/django/3.1.3"
   {
     "product": "pytz",
     "version": "2021.1"
+  }
+]
+```
+### Dependency Resolution Endpoint for a local Python Project (not distributed through PIP).
+
+
+* Request format
+
+```
+url: http://localhost:5001/resolve_dependencies
+```
+
+* Usage
+
+Should recieve through a POST Request a list of all the project's dependencies as defined on the requirements.txt file, separated by commas 
+
+* Example request using curl:
+
+```bash
+ curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d '[flask, pip-tools]' "http://localhost:5001/resolve_dependencies"
+```
+
+* Output format:
+ 
+ ```json
+[
+  {
+    "product": "tomli", 
+    "version": "2.0.1"
+  }, 
+  {
+    "product": "pip", 
+    "version": "22.0.4"
+  }, 
+  {
+    "product": "zipp", 
+    "version": "3.7.0"
+  }, 
+  {
+    "product": "Jinja2", 
+    "version": "3.1.1"
+  }, 
+  {
+    "product": "setuptools", 
+    "version": "61.2.0"
+  }, 
+  {
+    "product": "Werkzeug", 
+    "version": "2.1.0"
+  }, 
+  {
+    "product": "Flask", 
+    "version": "2.1.0"
+  }, 
+  {
+    "product": "importlib-metadata", 
+    "version": "4.11.3"
+  }, 
+  {
+    "product": "pep517", 
+    "version": "0.12.0"
+  }, 
+  {
+    "product": "itsdangerous", 
+    "version": "2.1.2"
+  }, 
+  {
+    "product": "click", 
+    "version": "8.1.0"
+  }, 
+  {
+    "product": "MarkupSafe", 
+    "version": "2.1.1"
+  }, 
+  {
+    "product": "pip-tools", 
+    "version": "6.5.1"
+  }, 
+  {
+    "product": "wheel", 
+    "version": "0.37.1"
   }
 ]
 ```
