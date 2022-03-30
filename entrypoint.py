@@ -144,7 +144,7 @@ def home():
     <p>API Endpoint for PyPI Packages: /dependencies/{packageName}/{version}<p>
     <p><b>Note</b>: The {version} path parameter is optional <p>
     <p>API Endpoint for Local Projects: /resolve_dependencies<p>
-    <p><b>Note</b>: Should recieve through a POST Request a list of all the project's dependencies as defined on the requirements.txt file, separated by commas <p>
+    <p><b>Note</b>: Should recieve through a POST Request a list of multiple dependencies as defined on the requirements.txt file, separated by commas <p>
     '''
 
 

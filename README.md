@@ -119,7 +119,7 @@ curl "http://localhost:5001/dependencies/django/3.1.3"
   }
 ]
 ```
-### Dependency Resolution Endpoint for a local Python Project (not distributed through PIP).
+### Dependency Resolution Endpoint for multiple dependencies.
 
 
 * Request format
@@ -130,7 +130,7 @@ url: http://localhost:5001/resolve_dependencies
 
 * Usage
 
-Should recieve through a POST Request a list of all the project's dependencies as defined on the requirements.txt file, separated by commas 
+  Should recieve through a POST Request a list of dependencies as defined on the requirements.txt file, separated by commas 
 
 * Example request using curl:
 
