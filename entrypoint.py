@@ -133,7 +133,6 @@ def run_pip(input_string, is_local_resolution):
 
     return True, res
 
-
 ###### FLASK API ######
 app = flask.Flask("api")
 app.config["DEBUG"] = True
@@ -144,7 +143,7 @@ def home():
     <p>An API for resolving PyPI dependencies.</p>
     <p>API Endpoint for PyPI Packages: /dependencies/{packageName}/{version}<p>
     <p><b>Note</b>: The {version} path parameter is optional <p>
-    <p>API Endpoint for Local Projects: /resolve_local_dependencies<p>
+    <p>API Endpoint for Local Projects: /resolve_dependencies<p>
     <p><b>Note</b>: Should recieve through a POST Request a list of all the project's dependencies as defined on the requirements.txt file, separated by commas <p>
     '''
 
@@ -178,8 +177,8 @@ def resolver_api_with_version(packageName, version):
 
     return jsonify(get_response_for_api(status, res))
 
-@app.route('/resolve_local_dependencies', methods=['POST'])
-def local_resolver():
+@app.route('/resolve_dependencies', methods=['POST'])
+def multiple_dependencies_resolver_api():
     try:
         request_data=str(request.data.decode("utf-8")).replace("[","").replace("]","")
         requirements = request_data.split(",")
